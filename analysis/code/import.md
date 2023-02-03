@@ -1,17 +1,16 @@
-#' ---
-#' title: "Combine expert estimate tables"
-#' author: "Abbey Camaclang"
-#' date: "02 Feb 2023"
-#' output: github_document
-#' ---
+Combine expert estimate tables
+================
+Abbey Camaclang
+02 Feb 2023
 
-#' This script reads individual expert estimates from multiple .csv files,
-#' compiles them into a single table, and reorganizes the table into a tidy
-#' version. It requires that the individual expert tables contain the same
-#' number of rows and columns, are saved as .csv file in a subfolder within the
-#' working directory, and no other .csv files are in the same subfolder.
+This script reads individual expert estimates from multiple .csv files,
+compiles them into a single table, and reorganizes the table into a tidy
+version. It requires that the individual expert tables contain the same
+number of rows and columns, are saved as .csv file in a subfolder within
+the working directory, and no other .csv files are in the same
+subfolder.
 
-#+ warning = FALSE, message = FALSE
+``` r
 # Load packages
 library(here)
 library(tidyverse)
@@ -21,10 +20,12 @@ library(naniar)
 input <- here("analysis", "data", "raw", "benefits") # where .csv files of benefit estimates are saved
 derived <- here("analysis", "data") # where compiled data tables should be saved
 results <- here("analysis", "results") # where results of analysis should be saved
+```
 
+Read in the individual tables of expert estimates and combine.  
+NOTE to maintain confidentiality, only sample tables are provided
 
-#' Read in the individual tables of expert estimates and combine.  
-#' NOTE to maintain confidentiality, only sample tables are provided
+``` r
 nstrat <- 17 # number of strategies (including combinations, but excluding baseline)
 ngroups <- 7 # number of ecological groups
 numexp <- 10 # number of experts
@@ -71,8 +72,11 @@ for (i in 1:numexp) {
 
 rawdata <- rawdata %>% 
   add_column(Expert = tempvec, .before = "Ecological.Group")
+```
 
-#' Format table
+Format table
+
+``` r
 data <- rawdata %>% 
   mutate(Ecological.Group = ifelse(Ecological.Group == "", NA, Ecological.Group)) %>% # changes blank rows to NA
   fill(Ecological.Group) %>% # fills NA rows with Ecological Group name
@@ -102,9 +106,12 @@ for (i in 1:(numexp*ngroups*3)) {
   clean[i,temp] <- data[i,4]
 }
 
-write.csv(clean, file = paste(derived, "/Estimates_clean.csv", sep = ""), row.names = FALSE)
+# write.csv(clean, file = paste(derived, "/Estimates_clean.csv", sep = ""), row.names = FALSE) 
+```
 
-#' Convert to tidy version
+Convert to tidy version
+
+``` r
 long <-
   gather(clean,
          key = Strategy,
@@ -112,11 +119,23 @@ long <-
          Baseline:S17
   )
 
-write_csv(long, file = paste(derived, "/Estimates_tidy.csv", sep = ""))
-# head(long)
+# write_csv(long, file = paste(derived, "/Estimates_tidy.csv", sep = ""))
+head(long)
+```
 
-#' Convert to wide format
+    ## # A tibble: 6 × 5
+    ##   Expert Ecological.Group       Estimate Strategy Value
+    ##    <int> <chr>                  <chr>    <chr>    <chr>
+    ## 1      1 Grassland species      Best     Baseline 45   
+    ## 2      1 Grassland species      Low      Baseline 25   
+    ## 3      1 Grassland species      High     Baseline 60   
+    ## 4      1 Burrow and den species Best     Baseline 50   
+    ## 5      1 Burrow and den species Low      Baseline 25   
+    ## 6      1 Burrow and den species High     Baseline 75
 
+Convert to wide format
+
+``` r
 grp.levels <- unique(long$Ecological.Group)
 
 long <- na.omit(long)
@@ -135,10 +154,30 @@ wide$Ecological.Group <- factor(wide$Ecological.Group, levels = grp.levels)
 wide <- wide[, c("Expert", "Ecological.Group", est.levels)] # Reorder columns by Strategy
 wide <- with(wide, wide[order(Expert, Ecological.Group),]) # Reorder rows by Ecological Group
 
-write_csv(wide, file = paste(derived, "/Estimates_wide.csv", sep = ""))
-# head(wide)
+# write_csv(wide, file = paste(derived, "/Estimates_wide.csv", sep = ""))
+head(wide)
+```
 
-#' Summarize the number of expert estimates
+    ## # A tibble: 6 × 56
+    ##   Expert Ecologi…¹ Basel…² Basel…³ Basel…⁴ S1.Best S1.Low S1.High S2.Best S2.Low
+    ##    <int> <fct>       <dbl>   <dbl>   <dbl>   <dbl>  <dbl>   <dbl>   <dbl>  <dbl>
+    ## 1      1 Grasslan…      45      25      60      75     50      85      75     50
+    ## 2      1 Burrow a…      50      25      75      75     50      75      50     25
+    ## 3      1 Wetland …      45      25      60      60     45      75      60     45
+    ## 4      1 Amphibia…      30      15      45      75     50      85      75     50
+    ## 5      1 Healthy …      35      20      50      75     50      85      75     50
+    ## 6      2 Grasslan…      40      20      50      60     35      65      50     25
+    ## # … with 46 more variables: S2.High <dbl>, S3.Best <dbl>, S3.Low <dbl>,
+    ## #   S3.High <dbl>, S4.Best <dbl>, S4.Low <dbl>, S4.High <dbl>, S5.Best <dbl>,
+    ## #   S5.Low <dbl>, S5.High <dbl>, S6.Best <dbl>, S6.Low <dbl>, S6.High <dbl>,
+    ## #   S7.Best <dbl>, S7.Low <dbl>, S7.High <dbl>, S8.Best <dbl>, S8.Low <dbl>,
+    ## #   S8.High <dbl>, S9.Best <dbl>, S9.Low <dbl>, S9.High <dbl>, S10.Best <dbl>,
+    ## #   S10.Low <dbl>, S10.High <dbl>, S11.Best <dbl>, S11.Low <dbl>,
+    ## #   S11.High <dbl>, S12.Best <dbl>, S12.Low <dbl>, S12.High <dbl>, …
+
+Summarize the number of expert estimates
+
+``` r
 temp <- subset(long, Estimate == "Best")
 
 strat.levels <- unique(temp$Strategy)
@@ -146,4 +185,5 @@ temp$Strategy <- factor(temp$Strategy,levels = strat.levels)
 
 stgy.count <- table(temp$Ecological.Group, temp$Strategy)
 
-write.csv(stgy.count, file = paste(results, "/estimatecounts.csv", sep = ""))
+# write.csv(stgy.count, file = paste(results, "/estimatecounts.csv", sep = "")) 
+```

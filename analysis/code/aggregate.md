@@ -1,27 +1,29 @@
-#' --- 
-#' title: "Aggregate Benefit Estimates" 
-#' author: "Abbey Camaclang" 
-#' date: "02 Feb 2023" 
-#' output: github_document 
-#' ---
-#'   
-#' This code 
-#' a) calculates benefits of each strategy (strategy - baseline) for each ecological group,  
-#' b) aggregates (averages) across experts, and  
-#' c) calculates expected performance (probability of persistence) under each strategy based on the aggregated estimates.  
-#'   
-#' Based on first part of Step 2 section of 1_Cost-Effectiveness.R code from the Fraser River Estuary PTM project.  
-#' This script uses **Estimates_wide.csv** from *import.R*.
-#'   
-#' If some of the expert estimates for a given ecological group are based on
-#' only a subset of species in that group, this estimate need to be weighted
-#' accordingly. To do this, you need  
-#' 1) a .csv file *EcolGroupsList.csv* with ecological groups in columns and 
-#' the list of species for each group in rows, and   
-#' 2) a .csv file *SpecialCases.csv* listing only the estimates (from which expert, and for which ecol group and strategy) 
-#' that require different weighting, along with the number of species in that group that the estimate is based on.  
-#'   
-#+ warning = FALSE, message = FALSE
+Aggregate Benefit Estimates
+================
+Abbey Camaclang
+02 Feb 2023
+
+This code a) calculates benefits of each strategy (strategy - baseline)
+for each ecological group,  
+b) aggregates (averages) across experts, and  
+c) calculates expected performance (probability of persistence) under
+each strategy based on the aggregated estimates.
+
+Based on first part of Step 2 section of 1_Cost-Effectiveness.R code
+from the Fraser River Estuary PTM project.  
+This script uses **Estimates_wide.csv** from *import.R*.
+
+If some of the expert estimates for a given ecological group are based
+on only a subset of species in that group, this estimate need to be
+weighted accordingly. To do this, you need  
+1) a .csv file *EcolGroupsList.csv* with ecological groups in columns
+and the list of species for each group in rows, and  
+2) a .csv file *SpecialCases.csv* listing only the estimates (from which
+expert, and for which ecol group and strategy) that require different
+weighting, along with the number of species in that group that the
+estimate is based on.
+
+``` r
 # Load packages
 library(tidyverse)
 library(here)
@@ -45,8 +47,11 @@ grp.levels <- unique(long$Ecological.Group)
 wide <- read_csv(paste0(derived, "/Estimates_wide.csv"))
 wide$Expert <- as_factor(wide$Expert)
 wide$Ecological.Group <- factor(wide$Ecological.Group, levels = grp.levels)
+```
 
-#' Calculate benefit
+Calculate benefit
+
+``` r
 # Subtract baseline performance from strategy performance
 baseline <- wide[3:5]
 strategies <- wide[6:ncol(wide)]  
@@ -57,9 +62,12 @@ benefit <- strategies - as.matrix(baseline)
 # Add row labels back to the tables
 benefit <- cbind(wide[,1:2], benefit )
 baseline <- cbind(wide[,1:2], baseline)
+```
 
-#' Aggregate (weighted average) benefit and the baseline estimates for each ecol group x strategy
-#+ warning = FALSE, message = FALSE
+Aggregate (weighted average) benefit and the baseline estimates for each
+ecol group x strategy
+
+``` r
 if (wt.by.numspp == 1) {
   
   # Re-organize benefits table to make it easier to weight estimates
@@ -187,17 +195,25 @@ if (wt.by.numspp == 1) {
 
 write_csv(benefit.avg, paste0(results, "/Estimates_avg_benefits.csv"))
 write_csv(baseline.avg, paste0(results, "/Estimates_avg_baseline.csv"))
+```
 
-#' Calculate averaged performance (probability of persistence)
+Calculate averaged performance (probability of persistence)
+
+``` r
 # Add averaged benefit estimates to the (averaged) baseline
 persistence <- benefit.avg[,2:ncol(benefit.avg)] + as.matrix(baseline.avg[,2:ncol(baseline.avg)])
 persistence <- cbind(baseline.avg, persistence)
 
 write_csv(persistence, paste0(results, "/Estimates_avg_persistence.csv"))
+```
 
-#' Weight benefits by number of species in group (multiply) for calculating CE scores
+Weight benefits by number of species in group (multiply) for calculating
+CE scores
+
+``` r
 grpwtd_ben <- benefit.avg[,2:ncol(benefit.avg)]*numspp
 grpwtd_ben <- cbind(benefit.avg[,1], grpwtd_ben)
 names(grpwtd_ben)[1] <- "Ecological.Group"
 
 write_csv(grpwtd_ben, paste0(results, "/Estimates_avg_benefits_groupwtd.csv"))
+```

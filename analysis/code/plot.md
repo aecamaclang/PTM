@@ -1,18 +1,18 @@
-#' ---
-#' title: "Plot Expert Estimates"
-#' author: "Abbey Camaclang"
-#' date: "02 Feb 2023"
-#' output: github_document
-#' ---
+Plot Expert Estimates
+================
+Abbey Camaclang
+02 Feb 2023
 
-#' Based on *Boxplot_script.R* from Fraser River Estuary PTM project 
-#' This script creates two plots for each Ecological Group:  
-#' 1) boxplots of the best guess, lowest, and highest estimates for each Strategy from all Experts;  
-#' 2) pointrange plots showing the best guess, lowest, and highest estimates of each Expert for each Strategy.  
-#'
-#' It requires the output file **Estimates_tidy.csv** from *import.R*.
+Based on *Boxplot_script.R* from Fraser River Estuary PTM project This
+script creates two plots for each Ecological Group:  
+1) boxplots of the best guess, lowest, and highest estimates for each
+Strategy from all Experts;  
+2) pointrange plots showing the best guess, lowest, and highest
+estimates of each Expert for each Strategy.
 
-#+ message = FALSE, warning = FALSE
+It requires the output file **Estimates_tidy.csv** from *import.R*.
+
+``` r
 # Load packages
 library(tidyverse)
 library(cowplot)
@@ -36,10 +36,13 @@ long$Strategy <- factor(long$Strategy, levels = strat.levels)
 long$Estimate <- factor(long$Estimate, levels = est.levels)
 
 long <- na.omit(long)
+```
 
-#' ## Boxplots
-#' Plot group estimates as boxplots
-#+ message = FALSE, warning = FALSE
+## Boxplots
+
+Plot group estimates as boxplots
+
+``` r
 for (j in seq_along(expcode)) {
   
   grp.list <- list()
@@ -106,10 +109,16 @@ for (j in seq_along(expcode)) {
 }
 
 print(temp.plot)
+```
 
-#' ## Pointrange plots
-#' Plots each expert estimate separately (x-axis = Expert, y-axis point = Best guess, range = low->high)
-#+ message = FALSE, warning = FALSE
+![](plot_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+## Pointrange plots
+
+Plots each expert estimate separately (x-axis = Expert, y-axis point =
+Best guess, range = low-\>high)
+
+``` r
 # Rearrange table so estimates for each ecol group-strategy are on the same row
 wide <- spread(long, key = Estimate, value = Value)
 wide$Expert <- as.factor(wide$Expert)
@@ -171,3 +180,6 @@ for (j in seq_along(expcode)) {
 }
 
 print(temp.plot2)
+```
+
+![](plot_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
