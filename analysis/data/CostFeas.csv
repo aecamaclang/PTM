@@ -1,0 +1,19 @@
+Strategy,Name,Best.Cost,Min.Cost,Max.Cost,Best.Feas,Min.Feas,Max.Feas
+Baseline,Business as usual,0,0,0,1,1,1
+S1,Grazing management,13886934,7425820,33185239,0.81,0.64,0.87
+S2,Haying management,6676627,6243500,18480071,0.54,0.51,0.64
+S3,Fire management,17119817,11644173,27899290,0.94,0.74,0.98
+S4,Water flow management,4535076,495919,22292509,0.61,0.56,0.86
+S5,Habitat protection,18514291,10033445,40957369,0.60,0.58,0.67
+S6,Habitat restoration,2032309,1908408,29131564,0.57,0.50,0.97
+S7,Integrated pest management,5967926,5166527,42009668,0.84,0.68,0.91
+S8,Predator management,5309326,390677,13779376,0.98,0.83,1.00
+S9,Species management,6831409,6023070,46231475,0.98,0.94,1.00
+S10,Protect and restore,20546600,11941853,70088933,0.59,0.54,0.82
+S11,Grazing and fire management,31006751,19069993,61084529,0.88,0.69,0.92
+S12,"Grazing management, protect and restore",34433534,19367673,103274172,0.66,0.57,0.83
+S13,"Grazing and haying management, and restore",22595870,15577728,80796874,0.64,0.55,0.82
+S14,"Grazing, haying, and species management, protect and restore",47941570,31634243,167985718,0.70,0.64,0.83
+S15,"Grazing, haying, and water flow management, protect and restore",45645237,26107092,144046752,0.63,0.56,0.80
+S16,"Grazing, haying, fire, and integrated pest management, protect and restore",64197904,42421873,191663201,0.72,0.61,0.84
+S17,All of strategies 1 to 9,80873715,49331539,273966561,0.77,0.66,0.88
