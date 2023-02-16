@@ -1,0 +1,10 @@
+"total_cost","strategies","species_groups","threshold","number_of_species","budget.max"
+0,"Baseline","Sand.dune.species | Wetland.and.shorebird.species | Amphibians | Fish.species",50.01,4,0
+2032309,"S6","Grassland.species | Burrow.and.den.species | Healthy.prairie.landscape | Sand.dune.species | Wetland.and.shorebird.species | Amphibians | Fish.species",50.01,7,2032309
+0,"Baseline","",60.01,0,0
+2032309,"S6","Sand.dune.species",60.01,1,2032309
+6567385,"S4 + S6","Sand.dune.species | Fish.species",60.01,2,6676627
+18514291,"S5","Sand.dune.species | Amphibians | Fish.species",60.01,3,18514291
+20546600,"S10","Grassland.species | Burrow.and.den.species | Sand.dune.species | Amphibians | Fish.species",60.01,5,20546600
+34433534,"S12","Grassland.species | Burrow.and.den.species | Sand.dune.species | Wetland.and.shorebird.species | Amphibians | Fish.species",60.01,6,34433534
+47941570,"S14","Grassland.species | Burrow.and.den.species | Sand.dune.species | Wetland.and.shorebird.species | Amphibians | Fish.species | Healthy.prairie.landscape",60.01,7,47941570
