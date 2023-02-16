@@ -25,10 +25,16 @@ Aggregates and plots three-point benefit estimates and performs cost-effectivene
   * create pointrange plots of (unweighted or weighted) averaged estimates of probability of persistence (y-axis) for each strategy (x-axis) and for each ecological group
   * plot is saved as */figures/Estimates_avg_persistence_plot.pdf*
   
+### /code/expPerformance.R
+* uses */results/Estimates_avg_benefits.csv*, */data/CostFeas.csv*, and a table (*/data/raw/Combinations.csv*) that lists which individual strategies are in the combination strategies 
+  * calculate expected benefit (benefit x feasibility) (*/results/ExpBenefits.csv*)
+  * calculate performance (probability of persistence) using expected benefit value (*/results/ExpPerform_all.csv*)
+  * creates benefit matrix needed for optimization and uncertainty analysis (*/results/ExpPerform_best.csv*, */results/ExpPerform_high,csv*, and */results/ExpPerform_low.csv*)
+  
 ### /code/optimizeManagement.R
 * performs complementarity analysis on Best Guess estimates using consOpt package (https://github.com/ConservationDecisionsLab/consOpt)
-  * outputs are a table (*results/ComplementarityBest.csv*) and a plot (*results/ComplementarityBest.pdf*)
-  * also performs complementarity analysis using Low.csv and High.csv as benefit matrix (*results/ComplementarityLower.csv*, *results/ComplementarityLower.pdf*; *results/ComplementarityUpper.csv*, *results/ComplementarityUpper.pdf*)
+  * outputs are a table (*results/Complementarity_best.csv*) and a plot (*figures/Complementarity_best.pdf*)
+  * also performs complementarity analysis using Low.csv and High.csv as benefit matrix (*results/Complementarity_low.csv*, *figures/Complementarity_low.pdf*; *results/Complementarity_high.csv*, *figures/Complementarity_high.pdf*)
 
 ### /code/calculateCEscore.R
 * uses */results/Estimates_avg_benefits_groupwtd.csv* and a table of strategy Cost and Feasibility to calculate a cost-effectiveness (CE) score 
@@ -42,7 +48,17 @@ and plots the results (*results/Uncrtn_Cost_10000R_Scores.pdf*, *results/Uncrtn_
 * raw data files of expert estimates (*/raw/benefits/expXX.csv*, where XX are expert ID numbers) are not uploaded to maintain expert confidentiality. A blank table (*/raw/banefits/exp00.csv*) is provided instead for reference
 
 ### /raw/EcolGroupsList.csv
-* table with ecological groups (columns) with group names as headers, and the common names of species/communities included in the group (rows)
+* table with ecological groups (columns) as headers, and the common names of species/communities included in the group (rows)
+
+### /raw/Combinations.csv
+* table with strategy names (columns) as headers, and the list of individual strategies included (rows)
 
 ### /SpecialCases.csv
 * info on number of species in each group that individual experts based their estimates on, where this is less than the total number of species in the group
+
+### /CostFeas.csv
+* table listing the Best (most likely), Min, and Max cost estimates, and the Average, Min and Max feasibility estimates for each Strategy
+
+## /results
+
+## /figures
