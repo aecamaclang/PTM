@@ -1,4 +1,4 @@
-Optimize Strategies
+Optimize Management
 ================
 Abbey Camaclang
 15 Feb 2023
@@ -43,25 +43,57 @@ library(here)
 
 # Specify paths to subfolders within current working directory
 input <- here("analysis", "data", "raw") # where raw data files are located
-derived <- here("analysis", "data") # where compiled or summary data tables are located
+derived <- here("analysis", "data") # where compiled/summarized data are located
 results <- here("analysis", "results") # where results of analysis should be saved
 figures <- here("analysis", "figures") # where plots should be saved
 
 # Read in and prep data
 combos <- read.csv(paste0(input, "/Combinations.csv"), header = TRUE) # list of individual strategies that make up each strategy (in columns). Should have a column for baseline and all strategies
-benefits.best <- read.csv(paste0(results, "/ExpPerform_best.csv"), row.names = 1) # expected probability of persistence for each Strategy (rows) and Species Group (columns), including baseline
+exp.perf <- read.csv(paste0(results, "/ExpPerform_all.csv"))
 costfeas <- read.csv(paste0(derived, "/CostFeas.csv")) # estimated Cost and Feasibility for each Strategy (col 1), including Baseline
 costs <- costfeas$Best.Cost
 names(costs) <- costfeas$Strategy
 ```
 
-## Find optimal strategies
+Create expected performance matrix for complementarity analysis
+(optimization)
+
+``` r
+perf.transposed <- exp.perf[,-1] %>%
+  t() %>%
+  data.frame() %>%
+  setNames(exp.perf[,1]) %>%
+  mutate(Est.type = rownames(.)) %>%
+  separate(Est.type, c("Estimate", "Strategy"), sep = "[_]", remove = TRUE) %>%
+  relocate(Estimate, Strategy) %>%
+  remove_rownames()
+
+best <- perf.transposed %>%
+  filter(grepl("Best", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
+
+write.csv(best, paste0(results, "/ExpPerform_best.csv"), row.names = FALSE)
+```
+
+Sample performance matrix:
+
+|          | Grassland species | Burrow and den species | Sand dune species | Wetland and shorebird species | Amphibians | Fish species | Healthy prairie landscape |
+|----------|------------------:|-----------------------:|------------------:|------------------------------:|-----------:|-------------:|--------------------------:|
+| Baseline |            45.500 |                 45.500 |          52.87500 |                      51.20253 |   50.55556 |     55.00000 |                  40.00000 |
+| S1       |            57.660 |                 54.588 |          61.03500 |                      57.64304 |   58.73333 |     59.11429 |                  54.22222 |
+| S2       |            49.682 |                 46.775 |          53.95875 |                      52.46139 |   53.95556 |     55.00000 |                  43.51333 |
+| S3       |            51.938 |                 47.128 |          57.68500 |                      52.70127 |   51.37778 |     55.00000 |                  46.57778 |
+| S4       |            47.180 |                 45.332 |          52.87500 |                      56.66785 |   59.40356 |     61.00000 |                  45.60000 |
+| S5       |            58.376 |                 57.100 |          60.63250 |                      58.58835 |   61.51111 |     60.38571 |                  56.11111 |
+
+### Find optimal strategies for most likely scenario (best guess estimates)
 
 Run the optimization routine across the default budgets and thresholds.
 For some sparse documentation, type ?Optimize
 
 ``` r
-results.best <- Optimize(benefits.matrix = benefits.best, 
+results.best <- Optimize(benefits.matrix = best, 
                     cost.vector = costs, 
                     combo.strategies = combos
                     , thresholds = c(50.01, 60.01)
@@ -74,13 +106,27 @@ results.best <- Optimize(benefits.matrix = benefits.best,
 write.csv(results.best, paste0(results, "/Complementarity_best.csv"), row.names = FALSE)
 ```
 
+Sample output:
+
+| total_cost | strategies | species_groups                                                                                                                                               | threshold | number_of_species | budget.max |
+|-----------:|:-----------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------:|------------------:|-----------:|
+|          0 | Baseline   | Sand dune species \| Wetland and shorebird species \| Amphibians \| Fish species                                                                             |     50.01 |                 4 |          0 |
+|    2032309 | S6         | Grassland species \| Burrow and den species \| Healthy prairie landscape \| Sand dune species \| Wetland and shorebird species \| Amphibians \| Fish species |     50.01 |                 7 |    2032309 |
+|          0 | Baseline   |                                                                                                                                                              |     60.01 |                 0 |          0 |
+|    2032309 | S6         | Sand dune species                                                                                                                                            |     60.01 |                 1 |    2032309 |
+|    6567385 | S4 + S6    | Sand dune species \| Fish species                                                                                                                            |     60.01 |                 2 |    6676627 |
+|   18514291 | S5         | Sand dune species \| Amphibians \| Fish species                                                                                                              |     60.01 |                 3 |   18514291 |
+|   20546600 | S10        | Grassland species \| Burrow and den species \| Sand dune species \| Amphibians \| Fish species                                                               |     60.01 |                 5 |   20546600 |
+|   34433534 | S12        | Grassland species \| Burrow and den species \| Sand dune species \| Wetland and shorebird species \| Amphibians \| Fish species                              |     60.01 |                 6 |   34433534 |
+|   47941570 | S14        | Grassland species \| Burrow and den species \| Sand dune species \| Wetland and shorebird species \| Amphibians \| Fish species \| Healthy prairie landscape |     60.01 |                 7 |   47941570 |
+
 Plot using plotting function included in the consOpt package
 
 ``` r
 optcurve.best <- PlotResults(results.best)
 ```
 
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](optimizeManagement_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 OR create custom plot function (based on plotting function in the
 package):
@@ -153,46 +199,58 @@ PlotOptCurve <- function(summary.results, benefits.matrix, draw.labels=TRUE){
   plot(this.plot)
   this.plot
 }
-
-optcurve.best <- PlotOptCurve(results.best, benefits.best, draw.labels = TRUE)
 ```
 
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+Plot using custom function above
+
+``` r
+optcurve.best <- PlotOptCurve(results.best, best, draw.labels = TRUE)
+```
+
+    ## Warning: Removed 1 rows containing missing values (geom_text_repel).
+
+![](optimizeManagement_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 ggsave(paste0(figures, "/Complementarity_best.pdf"), optcurve.best, width = 180, height = 120, units = "mm")
 # ggsave(paste0(figures, "/Complementarity_best.tiff"), optcurve.best, width = 120, height = 115, units = "mm", dpi = 600)
 ```
 
-## Uncertainty analysis
+### Uncertainty analysis
 
-Run the optimization using lowest (pessimistic) estimates and highest
-(optimistic) estimates
+Create expected performance matrices for lowest and highest estimates
 
 ``` r
-benefits.low <- read.csv(paste0(results, "/ExpPerform_low.csv"), row.names = 1)
-benefits.high <- read.csv(paste0(results, "/ExpPerform_high.csv"), row.names = 1)
+low <- perf.transposed %>%
+  filter(grepl("Low", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
 
-results.low <- Optimize(benefits.matrix = benefits.low,
+high <- perf.transposed %>%
+  filter(grepl("High", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
+
+# write.csv(low, paste0(results, "/ExpPerform_low.csv"), row.names = FALSE) 
+# write.csv(high, paste0(results, "/ExpPerform_high.csv"), row.names = FALSE) 
+```
+
+Run the optimization for the most pessimistic scenario (lowest
+estimates) and the most optimistic scenario (highest estimates)
+
+``` r
+results.low <- Optimize(benefits.matrix = low,
                   cost.vector = costs,
                   combo.strategies = combos
                   , thresholds = c(40.01, 50.01)
                   )
-```
 
-    ## ====================================
-
-``` r
-results.high <- Optimize(benefits.matrix = benefits.high,
+results.high <- Optimize(benefits.matrix = high,
                   cost.vector = costs,
                   combo.strategies = combos
                   , thresholds = c(60.01, 70.01)
                   ) 
-```
 
-    ## ====================================
-
-``` r
 write.csv(results.low, paste0(results, "/Complementarity_low.csv"), row.names = FALSE)
 write.csv(results.high, paste0(results, "/Complementarity_high.csv"), row.names = FALSE)
 ```
@@ -202,30 +260,12 @@ Plot the benefit curves for lowest and highest estimates
 ``` r
 # Using plotting function included in the consOpt package:
 optcurve.low <- PlotResults(results.low)
-```
-
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-``` r
 optcurve.high <- PlotResults(results.high)
-```
 
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
-
-``` r
 # OR using the custom plot function above:
-optcurve.low <- PlotOptCurve(results.low, benefits.best, draw.labels = TRUE)
-```
+optcurve.low <- PlotOptCurve(results.low, low, draw.labels = TRUE)
+optcurve.high <- PlotOptCurve(results.high, high, draw.labels = TRUE)
 
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->
-
-``` r
-optcurve.high <- PlotOptCurve(results.high, benefits.best, draw.labels = TRUE)
-```
-
-![](optimizeManagement_files/figure-gfm/unnamed-chunk-7-4.png)<!-- -->
-
-``` r
 # Save plots as pdf or tiff files
 ggsave(paste0(figures, "/Complementarity_low.pdf"), optcurve.low, width = 180, height = 120, units = "mm")
 ggsave(paste0(figures, "/Complementarity_high.pdf"), optcurve.high, width = 180, height = 120, units = "mm")

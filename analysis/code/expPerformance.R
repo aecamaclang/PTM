@@ -8,7 +8,6 @@
 #' This code:  
 #' 1) calculates expected benefit (benefit * feasibility)  
 #' 2) calculates expected performance based on weighted benefit estimates  
-#' 3) and generates the benefit matrix for use in the complementarity analysis.  
 #'   
 #' Requires **Estimates_avg_benefits.csv** and **Estimates_avg_baseline.csv** from *aggregate.R*, and a
 #' **CostFeas.csv** table of strategy cost and feasibility
@@ -30,7 +29,7 @@ costfeas <- read.csv(paste0(derived, "/CostFeas.csv"))
 costfeas <- costfeas[-1,] # Remove baseline values
 costfeas$Strategy <- as_factor(costfeas$Strategy)
 
-#' Calculate the expected benefit (benefit x feasibility)
+#' ### Calculate the expected benefit (benefit x feasibility)
 # Tidy data
 long <- gather(benefit, 
                key = Est.type, 
@@ -52,13 +51,15 @@ exp.ben <- joined %>%
 
 write.csv(exp.ben, paste0(results, "/ExpBenefits.csv"), row.names = FALSE)
 
-head(exp.ben)
+#' Sample table:
+#+ echo = FALSE
+# knitr::kable(exp.ben, "simple")
 
-#' Calculate expected performance (baseline probability of persistence + expected benefits)
-# Join with baseline estimates to make sure the observations (Ecol. groups) line up correctly
-# then split again to add weighted benefits to (averaged) baseline and get the expected performance
+#' ### Calculate expected performance (baseline probability of persistence + expected benefits)
+# Join with baseline estimates to make sure the estimates line up correctly
 joined.base <- left_join(baseline, exp.ben, by = "Ecological.Group") 
 
+# Add expected benefit estimates to (averaged) baseline and get the expected performance
 base.mat <- joined.base[,2:4]
 perf.mat <- joined.base[,5:ncol(joined.base)] + as.matrix(base.mat)
 
@@ -67,31 +68,6 @@ names(exp.perf)[1] <- "Ecological.Group"
 
 write.csv(exp.perf, paste0(results, "/ExpPerform_all.csv"), row.names = FALSE)
 
-head(exp.perf)
-
-# Create expected performance matrices for complementarity analysis (optimization) and uncertainty analysis
-perf.transposed <- exp.perf[,-1] %>%
-  t() %>%
-  data.frame() %>%
-  setNames(exp.perf[,1]) %>%
-  mutate(Est.type = rownames(.)) %>%
-  separate(Est.type, c("Estimate", "Strategy"), sep = "[_]", remove = TRUE) %>%
-  relocate(Estimate, Strategy)
-
-best <- perf.transposed %>%
-  filter(grepl("Best", Estimate)) %>%
-  mutate(Estimate = NULL)
-
-low <- perf.transposed %>%
-  filter(grepl("Low", Estimate)) %>%
-  mutate(Estimate = NULL)
-
-high <- perf.transposed %>%
-  filter(grepl("High", Estimate)) %>%
-  mutate(Estimate = NULL)
-
-write.csv(best, paste0(results, "/ExpPerform_best.csv"), row.names = FALSE) # use this table for the complementarity analysis
-write.csv(low, paste0(results, "/ExpPerform_low.csv"), row.names = FALSE) # for uncertainty analysis under most pessimistic scenario
-write.csv(high, paste0(results, "/ExpPerform_high.csv"), row.names = FALSE) # for uncertainty analysis under most optimistic scenario
-
-head(best)
+#' Sample table:
+#+ echo = FALSE
+# knitr::kable(exp.perf, "simple")
