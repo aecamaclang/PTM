@@ -30,6 +30,8 @@ ben.grpwtd <- read.csv(paste0(results, "/Estimates_avg_benefits_groupwtd.csv"))
 costfeas <- read.csv(paste0(derived, "/CostFeas.csv"))
 costfeas <- costfeas[-1,] # Remove baseline values
 costfeas$Strategy <- as_factor(costfeas$Strategy)
+names(costfeas)[2] <- "Cost" # for ON PTM only - col 2 is the cost with 0% discount rate. Col 4 = 2%, Col5 = 3.5%
+names(costfeas)[3] <- "Avg.Feas" # for ON PTM only
 
 #' ### Calculate total benefit of each strategy
 #' Sum benefits across all species/ecological groups
@@ -46,16 +48,19 @@ bestben.sum <- data.frame(rowSums(bestben)) %>%
   relocate(Strategy) %>%
   setNames(c("Strategy", "Benefit")) %>%
   mutate(Strategy = as_factor(Strategy))
+
+# Save as R object for cost uncertainty analysis
+saveRDS(bestben.sum, paste0(results, "/Benefits_total.rds")) 
   
 #' ### Calculate cost-effectiveness and rank strategies
 #' CE = (Benefit * Feasibility)/Cost
 CE_table <- full_join(bestben.sum, costfeas, by="Strategy") %>%
-  mutate(Exp.Benefit = Benefit * Min.Feas) %>% # weight benefits by feasibility
-  mutate(CE = (Exp.Benefit/Best.Cost)*a) %>% # divide by cost then scale
-  select(c("Strategy", "Benefit", "Best.Cost", "Min.Feas", "Exp.Benefit", "CE")) %>%
+  mutate(Exp.Benefit = Benefit * Avg.Feas) %>%
+  mutate(CE = (Exp.Benefit/Cost)*a) %>% # divide by cost then scale
+  select(c("Strategy", "Benefit", "Cost", "Avg.Feas", "Exp.Benefit", "CE")) %>%
   mutate(CE_rank = rank(-CE),
          ExpBenefit_rank = rank(-Exp.Benefit),
-         Cost_rank = rank(Best.Cost))
+         Cost_rank = rank(Cost))
 
 write.csv(CE_table, paste0(results, "/CE_Scores.csv"), row.names = FALSE)
 
