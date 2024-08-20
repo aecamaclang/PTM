@@ -1,5 +1,5 @@
 #' ---
-#' title: "Optimize Strategies"
+#' title: "Optimize Management"
 #' author: "Abbey Camaclang"  
 #' date: "15 Feb 2023"
 #' output: github_document
@@ -14,7 +14,8 @@
 #' requires a table **Combinations.csv** specifying which individual strategies
 #' are in the combination strategies.  
 #'   
-#' If using for the first time, need to install and load packages. Two ways to  build/install the consOpt package:  
+#' If using for the first time, need to install and load packages. 
+#' Two ways to  build/install the consOpt package:  
 #'   
 #' Method A  
 #+ eval = FALSE
@@ -25,7 +26,8 @@ install_github("ConservationDecisionsLab/consOpt")
 #' OR Method B  
 #' 1) download/clone the github repository https://github.com/ConservationDecisionsLab/consOpt  
 #' 2) open up RStudio and open the RProj file in the downloaded directory  
-#' 3) press "build and install" in the top right corner. This should restart the R session and load the package.  
+#' 3) press "build and install" in the top right corner. This should restart 
+#' the R session and load the package.  
 #'   
 #' May need to install/update Rtools, R/RStudio, or some of the required
 #' packages - see DESCRIPTION file in the consOpt package for a list of other required packages.  
@@ -39,26 +41,52 @@ library(here)
 
 # Specify paths to subfolders within current working directory
 input <- here("analysis", "data", "raw") # where raw data files are located
-derived <- here("analysis", "data") # where compiled or summary data tables are located
+derived <- here("analysis", "data") # where compiled/summarized data are located
 results <- here("analysis", "results") # where results of analysis should be saved
 figures <- here("analysis", "figures") # where plots should be saved
 
 # Read in and prep data
 combos <- read.csv(paste0(input, "/Combinations.csv"), header = TRUE) # list of individual strategies that make up each strategy (in columns). Should have a column for baseline and all strategies
-benefits.best <- read.csv(paste0(results, "/ExpPerform_best.csv"), row.names = 1) # expected probability of persistence for each Strategy (rows) and Species Group (columns), including baseline
+exp.perf <- read.csv(paste0(results, "/ExpPerform_all.csv"))
 costfeas <- read.csv(paste0(derived, "/CostFeas.csv")) # estimated Cost and Feasibility for each Strategy (col 1), including Baseline
 costs <- costfeas$Best.Cost
 names(costs) <- costfeas$Strategy
 
-#' ## Find optimal strategies
-#' Run the optimization routine across the default budgets and thresholds. For some sparse documentation, type ?Optimize
+#' Create expected performance matrix for complementarity analysis (optimization)
+perf.transposed <- exp.perf[,-1] %>%
+  t() %>%
+  data.frame() %>%
+  setNames(exp.perf[,1]) %>%
+  mutate(Est.type = rownames(.)) %>%
+  separate(Est.type, c("Estimate", "Strategy"), sep = "[_]", remove = TRUE) %>%
+  relocate(Estimate, Strategy) %>%
+  remove_rownames()
+
+best <- perf.transposed %>%
+  filter(grepl("Best", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
+
+write.csv(best, paste0(results, "/ExpPerform_best.csv"), row.names = FALSE)
+
+#' Sample performance matrix:
+#+ echo = FALSE
+# knitr::kable(head(best), "simple")
+
+#' ### Find optimal strategies for most likely scenario (best guess estimates)  
+#' Run the optimization routine across the default budgets and thresholds. 
+#' For some sparse documentation, type ?Optimize  
 #+ warning = FALSE, message = FALSE
-results.best <- Optimize(benefits.matrix = benefits.best, 
+results.best <- Optimize(benefits.matrix = best, 
                     cost.vector = costs, 
                     combo.strategies = combos
                     , thresholds = c(50.01, 60.01)
                     )
 write.csv(results.best, paste0(results, "/Complementarity_best.csv"), row.names = FALSE)
+
+#' Sample output:
+#+ echo = FALSE
+# knitr::kable(results.best, "simple", row.names = FALSE)
 
 #' Plot using plotting function included in the consOpt package
 optcurve.best <- PlotResults(results.best)
@@ -133,24 +161,38 @@ PlotOptCurve <- function(summary.results, benefits.matrix, draw.labels=TRUE){
   this.plot
 }
 
-optcurve.best <- PlotOptCurve(results.best, benefits.best, draw.labels = TRUE)
+#' Plot using custom function above
+optcurve.best <- PlotOptCurve(results.best, best, draw.labels = TRUE)
 
+#+ eval = FALSE
 ggsave(paste0(figures, "/Complementarity_best.pdf"), optcurve.best, width = 180, height = 120, units = "mm")
 # ggsave(paste0(figures, "/Complementarity_best.tiff"), optcurve.best, width = 120, height = 115, units = "mm", dpi = 600)
 
-#' ## Uncertainty analysis
-#' Run the optimization using lowest (pessimistic) estimates and highest (optimistic) estimates
-#+ warning = FALSE, message = FALSE
-benefits.low <- read.csv(paste0(results, "/ExpPerform_low.csv"), row.names = 1)
-benefits.high <- read.csv(paste0(results, "/ExpPerform_high.csv"), row.names = 1)
+#' ### Uncertainty analysis
+#' Create expected performance matrices for lowest and highest estimates
+low <- perf.transposed %>%
+  filter(grepl("Low", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
 
-results.low <- Optimize(benefits.matrix = benefits.low,
+high <- perf.transposed %>%
+  filter(grepl("High", Estimate)) %>%
+  mutate(Estimate = NULL) %>%
+  column_to_rownames("Strategy")
+
+# write.csv(low, paste0(results, "/ExpPerform_low.csv"), row.names = FALSE) 
+# write.csv(high, paste0(results, "/ExpPerform_high.csv"), row.names = FALSE) 
+
+#' Run the optimization for the most pessimistic scenario (lowest estimates) 
+#' and the most optimistic scenario (highest estimates)
+#+ eval = FALSE
+results.low <- Optimize(benefits.matrix = low,
                   cost.vector = costs,
                   combo.strategies = combos
                   , thresholds = c(40.01, 50.01)
                   )
 
-results.high <- Optimize(benefits.matrix = benefits.high,
+results.high <- Optimize(benefits.matrix = high,
                   cost.vector = costs,
                   combo.strategies = combos
                   , thresholds = c(60.01, 70.01)
@@ -160,14 +202,14 @@ write.csv(results.low, paste0(results, "/Complementarity_low.csv"), row.names = 
 write.csv(results.high, paste0(results, "/Complementarity_high.csv"), row.names = FALSE)
 
 #' Plot the benefit curves for lowest and highest estimates
-#+ warning = FALSE, message = FALSE
+#+ eval = FALSE
 # Using plotting function included in the consOpt package:
 optcurve.low <- PlotResults(results.low)
 optcurve.high <- PlotResults(results.high)
 
 # OR using the custom plot function above:
-optcurve.low <- PlotOptCurve(results.low, benefits.best, draw.labels = TRUE)
-optcurve.high <- PlotOptCurve(results.high, benefits.best, draw.labels = TRUE)
+optcurve.low <- PlotOptCurve(results.low, low, draw.labels = TRUE)
+optcurve.high <- PlotOptCurve(results.high, high, draw.labels = TRUE)
 
 # Save plots as pdf or tiff files
 ggsave(paste0(figures, "/Complementarity_low.pdf"), optcurve.low, width = 180, height = 120, units = "mm")

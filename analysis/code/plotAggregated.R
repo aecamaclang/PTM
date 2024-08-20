@@ -12,7 +12,7 @@
 #'   
 #' It can be used to plot mean estimates that are either unweighted
 #' (**Estimates_avg_persistence.csv** from *aggregate.R*) or weighted by
-#' feasibility (**Expected_Performance.csv** from *getBenefitMatrix.r*)
+#' feasibility (**ExpPerform_all.csv** from *expPerformance.r*)
 #'   
 #+ warning = FALSE, message = FALSE
 # Load packages
@@ -32,7 +32,7 @@ if (weighted == 0) {
   est.file <- "/Estimates_avg_persistence" # unweighted
 } else {
   if (weighted == 1) {
-    est.file <- "/Expected_Performance" # feasibility weighted
+    est.file <- "/ExpPerform_all" # feasibility weighted
   } else {
     stop("Must specify if estimates are weighted by feasibility (1) or not (0)")
   }
